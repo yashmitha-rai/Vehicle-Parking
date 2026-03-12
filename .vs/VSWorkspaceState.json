@@ -1,0 +1,16 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\back",
+    "\\back\\routes",
+    "\\front",
+    "\\front\\public",
+    "\\front\\src",
+    "\\front\\src\\assets",
+    "\\front\\src\\components",
+    "\\front\\src\\Context",
+    "\\front\\src\\pages"
+  ],
+  "SelectedNode": "\\front\\src\\pages\\Slot.jsx",
+  "PreviewInSolutionExplorer": false
+}
