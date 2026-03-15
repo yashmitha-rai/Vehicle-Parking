@@ -186,6 +186,8 @@ exports.bookSlot = async (req, res) => {
       vehicleNumber: vehicleNumber.toUpperCase(),
       vehicleType,
       slotId,
+      slotNumber: slot.slotNumber, // ✅ Saved directly for redundancy
+      section: slot.section,       // ✅ Saved directly for redundancy
       allottedDuration,
       baseRate,
       totalAmount,

@@ -666,7 +666,6 @@ exports.getPaymentAnalytics = async (req, res) => {
 // @desc    Generate Parking Slots (ENHANCED with ALL NEW FIELDS)
 // @desc    Generate Parking Slots (REAL-WORLD, SCHEMA-ALIGNED)
 // IMPROVED CONTROLLER - adminController.js (generateSlots function)
-
 exports.generateSlots = async (req, res) => {
   try {
     const {
@@ -695,73 +694,35 @@ exports.generateSlots = async (req, res) => {
       Disabled: Math.floor(2) // 2 disabled slots per section
     };
 
-    // Vehicle type assignment based on slot type
-    const getVehicleTypeForSlot = (slotType) => {
-      switch (slotType) {
-        case 'EV':
-          return ['Car']; // EV slots for electric cars only
-        case 'Emergency':
-          return ['Emergency']; // Emergency vehicles (Ambulance, Fire Service)
-        case 'Disabled':
-          return ['Car']; // Disabled parking for cars with accessibility
-        case 'Normal':
-        default:
-          return ['Car']; // All normal slots for regular cars
-      }
-    };
-
-    // Size based on slot type
-    const getSizeForSlotType = (slotType) => {
-      switch (slotType) {
-        case 'EV': return 'Large'; // Larger for charging equipment
-        case 'Emergency': return 'Large'; // Large for ambulances/fire trucks
-        case 'Disabled': return 'Large'; // Wide for wheelchair access
-        case 'Normal':
-        default: return 'Medium'; // Standard car slots
-      }
-    };
-
-    // Pricing: Emergency vehicles FREE, EV & Normal charged
-    const getPricingForSlotType = (slotType) => {
-      const basePrices = {
-        Emergency: 0, // ✅ FREE for ambulance, fire service
-        EV: pricingConfig.ev?.base || 30, // EV parking rate
-        Disabled: pricingConfig.disabled?.base || 20,
-        Normal: pricingConfig.car?.base || 25 // Regular car parking
-      };
-
-      const baseRate = basePrices[slotType] || 25;
-
-      return {
-        baseRate,
-        peakHourRate: slotType === 'Emergency' ? 0 : Math.round(baseRate * 1.5) // Emergency always 0
-      };
-    };
-
-    // Gate assignment
+    // Helper functions for slot generation
     const getGateForSection = (section) => {
-      const sectionIndex = sectionArray.indexOf(section);
-      const gates = ['Gate1', 'Gate2', 'Gate3', 'Gate4'];
-      return gates[sectionIndex % gates.length];
+      const charCode = section.charCodeAt(0) % 4;
+      return `Gate${charCode + 1}`;
     };
 
-    // Amenities
-    const getAmenitiesForSection = (section, slotType) => {
-      const amenities = ['CCTV'];
-      
-      if (['A', 'B'].includes(section)) {
-        amenities.push('Covered', 'Security');
-      }
-      
-      if (slotType === 'EV') {
-        amenities.push('ChargingStation'); // ✅ Near charging points
-      }
-      
-      if (slotType === 'Emergency') {
-        amenities.push('QuickAccess', 'NearEntrance'); // ✅ Immediate access
-      }
-      
-      return [...new Set(amenities)];
+    const getVehicleTypeForSlot = (type) => {
+      if (type === 'EV') return ['EV', 'Car'];
+      if (type === 'Emergency') return ['Emergency', 'Ambulance', 'FireTruck'];
+      return ['Car', 'Bike'];
+    };
+
+    const getSizeForSlotType = (type) => {
+      if (type === 'Emergency') return 'Large';
+      return 'Medium';
+    };
+
+    const getPricingForSlotType = (type) => {
+      if (type === 'Emergency') return { baseRate: 0, hourlyRate: 0 };
+      if (type === 'EV') return { baseRate: 30, hourlyRate: 45 };
+      if (type === 'Disabled') return { baseRate: 20, hourlyRate: 30 };
+      return { baseRate: 25, hourlyRate: 40 };
+    };
+
+    const getAmenitiesForSection = (section, type) => {
+      const amenities = ['CCTV', 'Lighting'];
+      if (type === 'EV') amenities.push('Charging Station', 'Fast Charging');
+      if (section === 'A' || section === 'B') amenities.push('Near Entrance', 'Elevator Access');
+      return amenities;
     };
 
     const slots = [];
@@ -770,7 +731,7 @@ exports.generateSlots = async (req, res) => {
       let counters = { EV: 0, Emergency: 0, Disabled: 0, Normal: 0 };
       const primaryGate = getGateForSection(section);
 
-      // ✅ SMART ALLOCATION: Emergency & EV slots at front rows (near entrance/charging)
+      // ✅ SMART ALLOCATION: Emergency & EV slots at front rows (nearest to entrance/charging)
       for (let row = 1; row <= rows; row++) {
         for (let col = 1; col <= columns; col++) {
           const slotNumber = `${section}${row}${col.toString().padStart(2, '0')}`;
@@ -853,7 +814,7 @@ exports.generateSlots = async (req, res) => {
     }
 
     await ParkingSlot.insertMany(slots);
-
+    
     // Breakdown
     const breakdown = {
       sections: sectionArray.length,
@@ -884,8 +845,21 @@ exports.generateSlots = async (req, res) => {
       breakdown
     });
   } catch (error) {
-    console.error('Generate Slots Error:', error);
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    console.error('CRITICAL: Generate Slots Failure');
+    console.error('Error Name:', error.name);
+    console.error('Error Message:', error.message);
+    if (error.errors) {
+      console.error('Validation Errors Details:');
+      Object.keys(error.errors).forEach(key => {
+        console.error(`- Field "${key}": ${error.errors[key].message}`);
+      });
+    }
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error during slot generation', 
+      error: error.message,
+      validationErrors: error.errors ? Object.keys(error.errors).map(k => error.errors[k].message) : null
+    });
   }
 };
 
@@ -1354,7 +1328,8 @@ exports.forceCompleteSession = async (req, res) => {
     if (actualDuration > session.allottedDuration && !session.isEmergencyVehicle) {
       const overtimeMinutes = actualDuration - session.allottedDuration;
       const overtimeHours = overtimeMinutes / 60;
-      penaltyCharge = Math.round(session.baseRate * overtimeHours * 1.5);
+      const baseRate = session.slotId?.pricing?.baseRate || 20;
+      penaltyCharge = Math.round(baseRate * overtimeHours * 1.5);
     }
 
     const finalAmount = session.isEmergencyVehicle ? 0 : session.totalAmount + penaltyCharge;

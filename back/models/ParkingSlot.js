@@ -86,12 +86,14 @@ const parkingSlotSchema = new mongoose.Schema({
     default: ''
   },
   // NEW VEHICLE TYPES & EMERGENCY
-  vehicleTypes: [{
-    type: String,
-    enum: ['Car', 'SUV', 'Bus', 'Truck', 'TwoWheeler', 'ThreeWheeler', 'Emergency'],
+  vehicleTypes: {
+    type: [{
+      type: String,
+      enum: ['Car', 'SUV', 'Bus', 'Truck', 'TwoWheeler', 'ThreeWheeler', 'Emergency', 'EV', 'Ambulance', 'FireTruck', 'Bike']
+    }],
     default: ['Car']
-  }],
-  
+  },
+
   // EMERGENCY OVERRIDE
   emergencyMode: {
     type: Boolean,
@@ -102,7 +104,7 @@ const parkingSlotSchema = new mongoose.Schema({
     enum: [0, 1, 2, 3], // 0=Normal, 3=Critical
     default: 0
   },
-  
+
   // GATE CONTROL
   entryGate: {
     type: String,
@@ -114,14 +116,14 @@ const parkingSlotSchema = new mongoose.Schema({
     enum: ['Gate1', 'Gate2', 'Gate3', 'Gate4', 'VIP', 'Emergency'],
     default: 'Gate1'
   },
-  
+
   // ENHANCED PRICING
   dynamicPricing: {
     weekendMultiplier: { type: Number, default: 1.5 },
     holidayMultiplier: { type: Number, default: 2.0 },
     peakHours: { start: String, end: String }
   },
-  
+
   // MAINTENANCE & SENSORS
   sensorStatus: {
     type: String,

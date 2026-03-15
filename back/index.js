@@ -8,6 +8,8 @@ const contactRoutes = require('./routes/ContactRoutes');
 
 //call the mongo connection function
 mongoConnection();
+console.log(">>> MODELS INITIALIZING <<<");
+require('./models/ParkingSlot');
 
 const PORT = 8008;
 app.use(cors())
@@ -17,7 +19,7 @@ app.use(express.json());
 
 //default route to check server status
 app.listen(PORT, ()=>{
-    console.log(`Server is running on port ${PORT}`);
+    console.log(`>>> BACKEND ACTIVE on port ${PORT} <<<`);
 });
 
 //test route

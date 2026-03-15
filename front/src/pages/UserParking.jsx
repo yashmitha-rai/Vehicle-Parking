@@ -139,7 +139,8 @@ const UserParking = () => {
     let overtimeCharge = 0;
     if (isOvertime && !session.isEmergencyVehicle) {
       const overtimeHours = overtimeMinutes / 60;
-      overtimeCharge = Math.round(session.baseRate * overtimeHours * 1.5);
+      const baseRate = session.slotId?.pricing?.baseRate || 20;
+      overtimeCharge = Math.round(baseRate * overtimeHours * 1.5);
     }
     
     return {
@@ -237,7 +238,6 @@ const UserParking = () => {
       const result = await bookParkingSlot(bookingData);
       
       if (result?.success) {
-        toast.success('📧 Booking Successful!');
         setCurrentSession(result.data);
         setShowBookingModal(false);
         setShowSessionModal(true);
@@ -267,7 +267,6 @@ const UserParking = () => {
     
     if (result?.success) {
       await loadSession(currentSession.session.tokenId);
-      toast.success('⏱️ Session extended by 30 minutes!');
     }
   };
 
@@ -286,7 +285,6 @@ const UserParking = () => {
           setShowSessionModal(false);
           setCurrentSession(null);
           await loadSlots();
-          toast.success('✅ Payment successful! Thank you for parking with us.');
         }
       }, 3000);
     } else {
@@ -297,7 +295,6 @@ const UserParking = () => {
         setShowSessionModal(false);
         setCurrentSession(null);
         await loadSlots();
-        toast.success('✅ Session completed! Pay at exit gate.');
       }
     }
   };

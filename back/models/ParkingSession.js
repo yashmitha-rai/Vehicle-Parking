@@ -33,6 +33,14 @@ const parkingSessionSchema = new mongoose.Schema({
     ref: 'ParkingSlot',
     required: true
   },
+  slotNumber: { // ✅ Added for redundancy
+    type: String,
+    required: true
+  },
+  section: { // ✅ Added for redundancy
+    type: String,
+    required: true
+  },
   entryTime: {
     type: Date,
     default: Date.now

@@ -32,7 +32,7 @@ const AdminSessions = () => {
   const [forceCompleteData, setForceCompleteData] = useState({
     sessionId: null,
     reason: '',
-    paymentMethod: 'Cash'
+    paymentMethod: 'cash'
   });
 
   // Filters
@@ -115,7 +115,7 @@ const AdminSessions = () => {
     setForceCompleteData({
       sessionId: session._id,
       reason: '',
-      paymentMethod: session.isEmergencyVehicle ? null : 'Cash'
+      paymentMethod: session.isEmergencyVehicle ? null : 'cash'
     });
     setSelectedSession(session);
     setShowForceCompleteModal(true);
@@ -180,7 +180,8 @@ const AdminSessions = () => {
     
     const overtimeMinutes = elapsedMinutes - session.allottedDuration;
     const overtimeHours = overtimeMinutes / 60;
-    return Math.round(session.baseRate * overtimeHours * 1.5);
+    const baseRate = session.slotId?.pricing?.baseRate || 20;
+    return Math.round(baseRate * overtimeHours * 1.5);
   };
 
   const calculateLiveAmount = (session) => {
@@ -526,8 +527,8 @@ const SessionsTable = ({ sessions, loading, onViewDetails, onUpdatePayment }) =>
                 <p className="text-xs text-gray-500">{session.userContact}</p>
               </td>
               <td className="py-3 px-4">
-                <p className="font-bold text-gray-900">{session.slotId?.slotNumber || 'N/A'}</p>
-                <p className="text-xs text-gray-500">Sec {session.slotId?.section}</p>
+                <p className="font-bold text-gray-900">{session.slotNumber || session.slotId?.slotNumber || 'N/A'}</p>
+                <p className="text-xs text-gray-500">Sec {session.section || session.slotId?.section || '-'}</p>
               </td>
               <td className="py-3 px-4">
                 <p className="text-sm font-semibold text-gray-900">
@@ -642,8 +643,8 @@ const ActiveSessionsGrid = ({ sessions, loading, onForceComplete, onViewDetails,
             {/* Header */}
             <div className="flex items-center justify-between border-b border-gray-200 pb-3">
               <div>
-                <h3 className="text-xl font-black text-gray-900">{session.slotId?.slotNumber}</h3>
-                <p className="text-xs text-gray-600 font-semibold">Section {session.slotId?.section}</p>
+                <h3 className="text-xl font-black text-gray-900">{session.slotNumber || session.slotId?.slotNumber}</h3>
+                <p className="text-xs text-gray-600 font-semibold">Section {session.section || session.slotId?.section}</p>
               </div>
               <span className={`${
                 isOvertime ? 'bg-red-500' : 'bg-blue-500'
@@ -769,7 +770,7 @@ const ForceCompleteModal = ({
           initial={{ scale: 0.9, y: 20 }}
           animate={{ scale: 1, y: 0 }}
           exit={{ scale: 0.9, y: 20 }}
-          className="bg-white rounded-2xl shadow-2xl max-w-lg w-full"
+          className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -796,7 +797,7 @@ const ForceCompleteModal = ({
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600 font-semibold">Slot:</span>
-                <span className="text-base font-bold text-gray-900">{session.slotId?.slotNumber}</span>
+                <span className="text-base font-bold text-gray-900">{session.slotNumber || session.slotId?.slotNumber}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600 font-semibold">Elapsed:</span>
@@ -858,8 +859,8 @@ const ForceCompleteModal = ({
                   onChange={(e) => setForceCompleteData({ ...forceCompleteData, paymentMethod: e.target.value })}
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-red-500 focus:ring-4 focus:ring-red-50 font-semibold"
                 >
-                  <option value="Cash">Cash</option>
-                  <option value="Online">Online</option>
+                  <option value="cash">Cash</option>
+                  <option value="online">Online</option>
                   <option value="Wallet">Wallet</option>
                 </select>
               </div>
@@ -1327,7 +1328,7 @@ const SessionDetailsModal = ({ session, isOpen, onClose, onForceComplete, onUpda
               )}
               {canUpdatePayment && (
                 <button
-                  onClick={() => onUpdatePayment(session._id, 'paid', 'Cash')}
+                  onClick={() => onUpdatePayment(session._id, 'paid', 'cash')}
                   className="flex-1 px-4 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
                 >
                   <CheckCircle className="w-4 h-4" />
